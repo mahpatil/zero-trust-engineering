@@ -1,0 +1,23 @@
+dependencies {
+    implementation project(':common:security')
+    implementation project(':common:utils')
+    implementation project(':common:models')
+    
+    // Transaction Ledger specific dependencies
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.cloud:spring-cloud-starter-stream-kafka'
+    implementation 'org.springframework.boot:spring-boot-starter-cache'
+    implementation 'com.google.cloud:spring-cloud-gcp-starter-pubsub'
+    implementation 'com.google.cloud.sql:postgres-socket-factory:1.13.1'
+    
+    // Database
+    runtimeOnly 'org.postgresql:postgresql'
+    
+    // Lombok for reducing boilerplate
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+}
+
+bootJar {
+    archiveFileName = 'transaction-ledger.jar'
+}

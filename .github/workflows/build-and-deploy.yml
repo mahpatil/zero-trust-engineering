@@ -1,0 +1,180 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+    types: [ opened, synchronize, reopened ]
+
+env:
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  GCP_SA_KEY: ${{ secrets.GCP_SA_KEY }}
+
+jobs:
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+      
+      - name: OWASP Dependency Check
+        run: ./gradlew dependencyCheckAggregate
+      
+      - name: SonarQube Scan
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: ./gradlew sonarqube
+      
+      - name: Upload Security Reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-reports
+          path: build/reports/dependency-check-report.html
+
+  build:
+    name: Build and Test
+    needs: security-scan
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service: [user-management, transaction-ledger, fraud-detection, payment-gateway, notifications]
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+      
+      - name: Build and Test
+        run: ./gradlew :microservices:${{ matrix.service }}:build
+      
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-results-${{ matrix.service }}
+          path: microservices/${{ matrix.service }}/build/reports/tests/
+      
+      - name: Setup Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          export_default_credentials: true
+      
+      - name: Configure Docker for GCR
+        run: gcloud auth configure-docker gcr.io
+      
+      - name: Build and Push Docker Image
+        run: |
+          ./gradlew :microservices:${{ matrix.service }}:jib \
+            -Djib.to.image=gcr.io/${{ env.PROJECT_ID }}/${{ matrix.service }}:${{ github.sha }} \
+            -Djib.to.tags=latest
+
+  deploy-dev:
+    name: Deploy to Development
+    needs: build
+    runs-on: ubuntu-latest
+    environment: development
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.5.7
+      
+      - name: Setup Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
+          project_id: ${{ secrets.GCP_PROJECT_ID }}
+          export_default_credentials: true
+      
+      - name: Terraform Init
+        working-directory: ./infrastructure/environments/dev
+        run: terraform init
+      
+      - name: Terraform Plan
+        working-directory: ./infrastructure/environments/dev
+        run: |
+          terraform plan \
+            -var="project_id=${{ secrets.GCP_PROJECT_ID }}" \
+            -var="project_number=${{ secrets.GCP_PROJECT_NUMBER }}" \
+            -out=tfplan
+      
+      - name: Terraform Apply
+        working-directory: ./infrastructure/environments/dev
+        run: terraform apply -auto-approve tfplan
+      
+      - name: Update Cloud Run Services
+        run: |
+          for service in user-management transaction-ledger fraud-detection payment-gateway notifications; do
+            gcloud run services update $service \
+              --image gcr.io/${{ env.PROJECT_ID }}/$service:${{ github.sha }} \
+              --region us-central1 \
+              --platform managed
+          done
+
+  deploy-prod:
+    name: Deploy to Production
+    needs: deploy-dev
+    runs-on: ubuntu-latest
+    environment: production
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v2
+        with:
+          terraform_version: 1.5.7
+      
+      - name: Setup Google Cloud CLI
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
+          project_id: ${{ secrets.GCP_PROD_PROJECT_ID }}
+          export_default_credentials: true
+      
+      - name: Terraform Init
+        working-directory: ./infrastructure/environments/prod
+        run: terraform init
+      
+      - name: Terraform Plan
+        working-directory: ./infrastructure/environments/prod
+        run: |
+          terraform plan \
+            -var="project_id=${{ secrets.GCP_PROD_PROJECT_ID }}" \
+            -var="project_number=${{ secrets.GCP_PROD_PROJECT_NUMBER }}" \
+            -var="access_policy_id=${{ secrets.ACCESS_POLICY_ID }}" \
+            -var="allowed_ip_ranges=${{ secrets.ALLOWED_IP_RANGES }}" \
+            -out=tfplan
+      
+      - name: Terraform Apply
+        working-directory: ./infrastructure/environments/prod
+        run: terraform apply -auto-approve tfplan
+      
+      - name: Update Cloud Run Services
+        run: |
+          for service in user-management transaction-ledger fraud-detection payment-gateway notifications; do
+            gcloud run services update $service \
+              --image gcr.io/${{ env.PROJECT_ID }}/$service:${{ github.sha }} \
+              --region us-central1 \
+              --platform managed
+          done

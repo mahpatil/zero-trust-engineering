@@ -1,0 +1,63 @@
+name: Security Scan
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Run daily at midnight
+  workflow_dispatch:  # Allow manual triggering
+
+jobs:
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0
+      
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+      
+      - name: OWASP Dependency Check
+        run: ./gradlew dependencyCheckAggregate
+      
+      - name: SonarQube Scan
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: ./gradlew sonarqube
+      
+      - name: Trivy Vulnerability Scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+      
+      - name: Upload Trivy Scan Results
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: 'trivy-results.sarif'
+      
+      - name: Upload Security Reports
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-reports
+          path: |
+            build/reports/dependency-check-report.html
+            trivy-results.sarif
+      
+      - name: Terraform Security Scan
+        uses: triat/terraform-security-scan@v3
+        with:
+          tfsec_args: --no-color
+          tfsec_output_format: sarif
+          tfsec_output_file: tfsec-results.sarif
+      
+      - name: Upload Terraform Security Results
+        uses: github/codeql-action/upload-sarif@v2
+        with:
+          sarif_file: tfsec-results.sarif

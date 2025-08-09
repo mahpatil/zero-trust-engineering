@@ -1,0 +1,25 @@
+dependencies {
+    implementation project(':common:security')
+    implementation project(':common:utils')
+    implementation project(':common:models')
+    
+    // Notifications specific dependencies
+    implementation 'org.springframework.boot:spring-boot-starter-data-jpa'
+    implementation 'org.springframework.cloud:spring-cloud-starter-stream-kafka'
+    implementation 'com.google.cloud:spring-cloud-gcp-starter-pubsub'
+    implementation 'org.springframework.boot:spring-boot-starter-mail'
+    implementation 'com.google.cloud.sql:postgres-socket-factory:1.13.1'
+    implementation 'com.sendgrid:sendgrid-java:4.9.3'
+    implementation 'com.twilio.sdk:twilio:9.7.0'
+    
+    // Database
+    runtimeOnly 'org.postgresql:postgresql'
+    
+    // Lombok for reducing boilerplate
+    compileOnly 'org.projectlombok:lombok'
+    annotationProcessor 'org.projectlombok:lombok'
+}
+
+bootJar {
+    archiveFileName = 'notifications.jar'
+}
