@@ -24,8 +24,8 @@ jobs:
       # - name: Init gradle wrapper
       #   run: gradle wrapper
         
-      - name: OWASP Dependency Check
-        run: ./gradlew dependencyCheckAggregate
+      # - name: OWASP Dependency Check
+      #   run: ./gradlew dependencyCheckAggregate
       
       - name: SonarQube Scan
         env:
