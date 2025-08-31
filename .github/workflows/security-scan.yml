@@ -21,8 +21,8 @@ jobs:
           distribution: 'temurin'
           cache: gradle
 
-      - name: Init gradle wrapper
-        run: gradle wrapper
+      # - name: Init gradle wrapper
+      #   run: gradle wrapper
         
       - name: OWASP Dependency Check
         run: ./gradlew dependencyCheckAggregate
