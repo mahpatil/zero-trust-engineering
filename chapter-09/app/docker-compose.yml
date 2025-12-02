@@ -1,0 +1,144 @@
+version: '3.8'
+
+services:
+  # PostgreSQL database
+  postgres:
+    image: postgres:14-alpine
+    container_name: zero-trust-postgres
+    environment:
+      POSTGRES_PASSWORD: devpassword
+      POSTGRES_USER: postgres
+      POSTGRES_MULTIPLE_DATABASES: user_management,transaction_ledger,fraud_detection,payment_gateway,notifications
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./scripts/create-multiple-postgresql-databases.sh:/docker-entrypoint-initdb.d/create-multiple-postgresql-databases.sh
+    ports:
+      - "5432:5432"
+    networks:
+      - zero-trust-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # User Management Service
+  user-management:
+    build:
+      context: ./microservices/user-management
+      dockerfile: Dockerfile
+    container_name: user-management
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=user_management
+      - DB_USER=postgres
+      - DB_PASSWORD=devpassword
+      - JWT_SECRET=dev-jwt-secret-key-replace-in-production
+      - GOOGLE_CLIENT_ID=your-google-client-id
+      - GOOGLE_CLIENT_SECRET=your-google-client-secret
+    ports:
+      - "8081:8080"
+    networks:
+      - zero-trust-network
+
+  # Transaction Ledger Service
+  transaction-ledger:
+    build:
+      context: ./microservices/transaction-ledger
+      dockerfile: Dockerfile
+    container_name: transaction-ledger
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=transaction_ledger
+      - DB_USER=postgres
+      - DB_PASSWORD=devpassword
+    ports:
+      - "8082:8080"
+    networks:
+      - zero-trust-network
+
+  # Fraud Detection Service
+  fraud-detection:
+    build:
+      context: ./microservices/fraud-detection
+      dockerfile: Dockerfile
+    container_name: fraud-detection
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=fraud_detection
+      - DB_USER=postgres
+      - DB_PASSWORD=devpassword
+    ports:
+      - "8083:8080"
+    networks:
+      - zero-trust-network
+
+  # Payment Gateway Service
+  payment-gateway:
+    build:
+      context: ./microservices/payment-gateway
+      dockerfile: Dockerfile
+    container_name: payment-gateway
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=payment_gateway
+      - DB_USER=postgres
+      - DB_PASSWORD=devpassword
+      - STRIPE_API_KEY=your-stripe-api-key
+      - PAYPAL_CLIENT_ID=your-paypal-client-id
+      - PAYPAL_CLIENT_SECRET=your-paypal-client-secret
+    ports:
+      - "8084:8080"
+    networks:
+      - zero-trust-network
+
+  # Notifications Service
+  notifications:
+    build:
+      context: ./microservices/notifications
+      dockerfile: Dockerfile
+    container_name: notifications
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=dev
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_NAME=notifications
+      - DB_USER=postgres
+      - DB_PASSWORD=devpassword
+      - SENDGRID_API_KEY=your-sendgrid-api-key
+      - TWILIO_ACCOUNT_SID=your-twilio-account-sid
+      - TWILIO_AUTH_TOKEN=your-twilio-auth-token
+    ports:
+      - "8085:8080"
+    networks:
+      - zero-trust-network
+
+networks:
+  zero-trust-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
