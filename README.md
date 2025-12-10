@@ -26,15 +26,19 @@ This book explores how to integrate Zero Trust principles into your software dev
 
 
 ## Table of contents
-1. Chapter 1: Understanding Zero Trust
+1. [Chapter 1: Understanding Zero Trust](chapter-01/CHAPTER_01.md)
 2. Chapter 2: Architecture and Pillars of Zero Trust
-3. Chapter 3: Secure Your Code, Build and Deploy
-4. Chapter 4: Secure Your Identities
-5. Chapter 5: Secure Your Network
-6. Chapter 6: Secure Your Data
+3. [Chapter 3: Secure Your Code, Build and Deploy](chapter-03/CHAPTER_03.md)
+4. [Chapter 4: Secure Your Identities](chapter-04/CHAPTER_04.md)
+5. [Chapter 5: Secure Your Network](chapter-05/CHAPTER_05.md)
+6. [Chapter 6: Secure Your Data](chapter-06/CHAPTER_06.md)
 7. Chapter 7: Manage Vulnerabilities
 8. Chapter 8: Continuous Monitoring
-9. Chapter 9: Container Security
+9. [Chapter 9: Container Security](chapter-09/CHAPTER_09.md)
 10. Chapter 10: Security In The Age of Artificial Intelligence
 11. Chapter 11: Dealing With Complexity
 12. Chapter 12: Policies, Frameworks, and Compliance
+
+## About the Code Samples
+
+The code samples in this repository are provided as reference implementations by the author to illustrate concepts discussed in the book. These samples are intended for educational purposes to help readers understand and apply Zero Trust Security principles in real-world scenarios.

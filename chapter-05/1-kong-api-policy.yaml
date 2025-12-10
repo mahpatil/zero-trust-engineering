@@ -1,0 +1,32 @@
+services:
+  - name: service-b
+    url: https://service-b.internal
+    routes:
+      - name: service-b-route
+        paths:
+          - /service-b
+    plugins:
+    - name: jwt
+      config:
+        uri_param_names:
+        - jwt
+        key_claim_name: iss
+        secret_reference: "vault:jwt-secret"
+        claims_to_verify:
+          - exp
+    - name: mtls-auth
+      config:
+        ca_certificates:
+        - /etc/kong/ca.crt
+        allow_without_client_cert: false
+    - name: acl
+      config:
+      whitelist:
+      - service-role
+consumers:
+  - username: service-a
+    custom_id: service-a-id
+    jwt_secrets:
+      - key: my-key-id
+        algorithm: RS256
+        rsa_public_key:<key>
