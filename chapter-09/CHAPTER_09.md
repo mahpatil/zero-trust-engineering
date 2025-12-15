@@ -132,26 +132,4 @@ This class configures Spring Security's filter chain to protect API endpoints us
 4. **Stateless Authentication:** No server-side sessions; each request independently verified
 5. **Fine-Grained Authorization:** Path-based access control for different API sections
 
-**Container Security Context:**
-
-- Works seamlessly in containerized environments (Kubernetes, Docker)
-- No session state simplifies horizontal scaling
-- Firebase tokens work across multiple container instances
-- Suitable for microservices architecture where each service validates tokens independently
-
-**Security Considerations:**
-
-- Ensure Firebase token validation includes expiration checks
-- Implement rate limiting to prevent token brute-force attacks
-- Use HTTPS in production to protect tokens in transit
-- Consider implementing additional claims-based authorization for fine-grained control
-- Monitor authentication failures for potential attacks
-
-**Use Case:**
-This configuration is ideal for containerized microservices in a Zero Trust architecture where:
-- Services need to authenticate users via centralized identity provider
-- Multiple containers/services share the same authentication mechanism
-- Stateless authentication is required for scalability
-- Service-to-service communication uses separate authentication (mTLS, service accounts)
-
 **Key Takeaway:** This security configuration implements Zero Trust identity verification for containerized applications by requiring authentication for protected endpoints and leveraging a centralized identity provider (Firebase). Every request is independently authenticated, eliminating implicit trust and enabling secure, scalable microservices.
