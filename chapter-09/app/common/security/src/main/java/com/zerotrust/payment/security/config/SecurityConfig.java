@@ -21,6 +21,7 @@ import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWrite
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import com.zerotrust.payment.security.validator.AudienceValidator;
 
 import java.util.Arrays;
 import java.util.List;
@@ -57,12 +58,10 @@ public class SecurityConfig {
             .headers(headers -> headers
                 .contentSecurityPolicy(csp -> csp.policyDirectives("default-src 'self'; frame-ancestors 'self'; form-action 'self'"))
                 .frameOptions(frame -> frame.deny())
-                .xssProtection(xss -> xss.enable())
                 .referrerPolicy(referrer -> referrer.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.STRICT_ORIGIN_WHEN_CROSS_ORIGIN))
                 .permissionsPolicy(permissions -> permissions.policy("camera=(), microphone=(), geolocation=()"))
-                // Add Cache-Control headers to prevent sensitive information caching
-                .cacheControl(cache -> cache.disable())
             )
+            .headers(headers -> headers.cacheControl(cache -> cache.disable()))
             .authorizeHttpRequests(auth -> auth
                 // Only allow specific endpoints to be accessed without authentication
                 .requestMatchers("/actuator/health").permitAll()

@@ -18,6 +18,8 @@ allprojects {
     }
 }
 
+
+
 subprojects {
     apply plugin: 'java'
     apply plugin: 'org.springframework.boot'
@@ -27,8 +29,8 @@ subprojects {
     apply plugin: 'org.sonarqube'
     apply plugin: 'jacoco'
     
-    sourceCompatibility = JavaVersion.VERSION_17
-    targetCompatibility = JavaVersion.VERSION_17
+    sourceCompatibility = JavaVersion.VERSION_21
+    targetCompatibility = JavaVersion.VERSION_21
     
     dependencyManagement {
         imports {
@@ -43,9 +45,9 @@ subprojects {
         implementation 'org.springframework.boot:spring-boot-starter-actuator'
         implementation 'org.springframework.boot:spring-boot-starter-validation'
         implementation 'org.springframework.boot:spring-boot-starter-security'
-        implementation 'org.springframework.cloud:spring-cloud-starter-sleuth'
+        implementation 'org.springframework.cloud:spring-cloud-starter-sleuth:3.1.8'
         implementation 'org.springframework.cloud:spring-cloud-starter-config'
-        implementation 'com.google.cloud:spring-cloud-gcp-starter'
+        implementation 'com.google.cloud:spring-cloud-gcp-starter:4.8.0'
         implementation 'io.micrometer:micrometer-registry-prometheus'
         implementation 'io.jsonwebtoken:jjwt-api:0.11.5'
         implementation 'com.fasterxml.jackson.core:jackson-databind'
@@ -88,7 +90,7 @@ subprojects {
     // Docker image configuration with Jib
     jib {
         from {
-            image = 'gcr.io/distroless/java17-debian11'
+            image = 'gcr.io/distroless/java21-debian11'
         }
         to {
             image = "gcr.io/zero-trust-payment/${project.name}"
